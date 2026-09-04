@@ -2,7 +2,7 @@
 #
 # Deploy Trino with NNDSS data for RL reward validation.
 #
-# Deploys: MinIO → Trino → loads NNDSS tables
+# Deploys: MinIO → Trino → loads NNDSS tables → Trino Query UI
 # Prereqs: oc, helm, python3 with trino/pandas/openpyxl
 #
 # Usage:
@@ -31,6 +31,7 @@ export MINIO_PVC_SIZE="${MINIO_PVC_SIZE:-5Gi}"
 # ── Uninstall ────────────────────────────────────────────────
 if [ "${1:-}" = "--uninstall" ]; then
   echo "==> Uninstalling Trino + MinIO from ${NAMESPACE}"
+  helm uninstall trino-query-ui -n "${NAMESPACE}" 2>/dev/null || true
   helm uninstall trino -n "${NAMESPACE}" 2>/dev/null || true
   oc delete deployment nessie -n "${NAMESPACE}" 2>/dev/null || true
   oc delete service nessie -n "${NAMESPACE}" 2>/dev/null || true
@@ -42,7 +43,7 @@ if [ "${1:-}" = "--uninstall" ]; then
   done
 
   # Delete routes
-  oc delete route trino-coordinator minio -n "${NAMESPACE}" 2>/dev/null || true
+  oc delete route trino-coordinator trino-query-ui minio -n "${NAMESPACE}" 2>/dev/null || true
 
   echo "Done. PVCs are preserved — delete manually if needed:"
   echo "  oc delete pvc -l app.kubernetes.io/name=minio -n ${NAMESPACE}"
@@ -117,6 +118,20 @@ conn.close()
 
 kill $PF_PID 2>/dev/null || true
 
+# ── 4. Deploy Trino Query UI ─────────────────────────────────
+echo ""
+echo "==> 4. Deploying Trino Query UI"
+if [ -d "${SCRIPT_DIR}/trino-query-ui" ]; then
+  helm upgrade --install trino-query-ui "${SCRIPT_DIR}/trino-query-ui" \
+    -n "${NAMESPACE}" \
+    --set trinoUpstream="trino:8080"
+  oc rollout status deployment/trino-query-ui -n "${NAMESPACE}" --timeout=120s
+  QUERY_UI_URL=$(oc get route trino-query-ui -n "${NAMESPACE}" -o jsonpath='{.spec.host}' 2>/dev/null || echo "")
+else
+  echo "  trino-query-ui chart not found, skipping"
+  QUERY_UI_URL=""
+fi
+
 echo ""
 echo "============================================"
 echo "  Trino Ready"
@@ -127,6 +142,11 @@ echo "  oc port-forward svc/trino -n ${NAMESPACE} 8090:8080"
 echo ""
 echo "In-cluster service address:"
 echo "  trino.${NAMESPACE}.svc.cluster.local:8080"
+if [ -n "${QUERY_UI_URL:-}" ]; then
+echo ""
+echo "Trino Query UI:"
+echo "  https://${QUERY_UI_URL}"
+fi
 echo ""
 echo "To uninstall:"
 echo "  ./deploy/deploy-trino.sh --uninstall"
