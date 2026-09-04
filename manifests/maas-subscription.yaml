@@ -1,0 +1,13 @@
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: MaaSSubscription
+metadata:
+  name: qwen3-8b-text2sql-sub
+  namespace: models-as-a-service
+spec:
+  modelRef:
+    name: qwen3-8b-text2sql
+    # namespace where the MaaSModelRef lives
+    namespace: <MODEL_NAMESPACE>
+  rateLimit:
+    requestsPerMinute: 60

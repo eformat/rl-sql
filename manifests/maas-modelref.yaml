@@ -1,0 +1,11 @@
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: MaaSModelRef
+metadata:
+  name: qwen3-8b-text2sql
+  # Must be in the same namespace as the LLMInferenceService
+spec:
+  modelRef:
+    name: qwen3-8b-text2sql
+    kind: LLMInferenceService
+    apiVersion: serving.kserve.io/v1alpha1

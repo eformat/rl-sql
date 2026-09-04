@@ -1,0 +1,45 @@
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: LLMInferenceService
+metadata:
+  annotations:
+    opendatahub.io/model-type: generative
+    openshift.io/display-name: Qwen3-8B Text-to-SQL (GRPO fine-tuned)
+    security.opendatahub.io/enable-auth: 'false'
+  labels:
+    kueue.x-k8s.io/queue-name: default
+    opendatahub.io/dashboard: 'true'
+    opendatahub.io/genai-asset: 'true'
+    app.kubernetes.io/part-of: llm-d
+  name: qwen3-8b-text2sql
+spec:
+  model:
+    uri: 'pvc://shared/text2sql/merged_model'
+    name: qwen3-8b-text2sql
+  replicas: 1
+  router:
+    scheduler: {}
+    route: {}
+    gateway: {}
+  template:
+    containers:
+      - name: main
+        env:
+          - name: VLLM_ADDITIONAL_ARGS
+            value: >-
+              --dtype bfloat16
+              --max-model-len 8192
+              --max-num-seqs 8
+              --gpu-memory-utilization 0.90
+              --enable-auto-tool-choice
+              --tool-call-parser hermes
+              --enforce-eager
+        resources:
+          requests:
+            cpu: '4'
+            memory: 32Gi
+            nvidia.com/mig-3g.71gb: '1'
+          limits:
+            cpu: '8'
+            memory: 64Gi
+            nvidia.com/mig-3g.71gb: '1'
