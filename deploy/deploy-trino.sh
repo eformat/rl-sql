@@ -72,7 +72,8 @@ oc rollout status deployment/trino-coordinator -n "${NAMESPACE}" --timeout=180s
 
 # ── 2. Load NNDSS data into Trino ────────────────────────────
 echo "==> 2. Loading NNDSS data into Trino"
-oc port-forward svc/trino-coordinator -n "${NAMESPACE}" 8090:8080 &
+# Service name is "trino" (Helm release name), deployment is "trino-coordinator"
+oc port-forward svc/trino -n "${NAMESPACE}" 8090:8080 &
 PF_PID=$!
 sleep 8
 
@@ -96,7 +97,7 @@ kill $PF_PID 2>/dev/null || true
 # ── 3. Verify ────────────────────────────────────────────────
 echo ""
 echo "==> 3. Verifying Trino tables"
-oc port-forward svc/trino-coordinator -n "${NAMESPACE}" 8090:8080 &
+oc port-forward svc/trino -n "${NAMESPACE}" 8090:8080 &
 PF_PID=$!
 sleep 5
 
@@ -122,10 +123,10 @@ echo "  Trino Ready"
 echo "============================================"
 echo ""
 echo "Port-forward for notebook access:"
-echo "  oc port-forward svc/trino-coordinator -n ${NAMESPACE} 8090:8080"
+echo "  oc port-forward svc/trino -n ${NAMESPACE} 8090:8080"
 echo ""
 echo "In-cluster service address:"
-echo "  trino-coordinator.${NAMESPACE}.svc.cluster.local:8080"
+echo "  trino.${NAMESPACE}.svc.cluster.local:8080"
 echo ""
 echo "To uninstall:"
 echo "  ./deploy/deploy-trino.sh --uninstall"
