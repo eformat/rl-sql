@@ -60,7 +60,7 @@ def execute_trino(sql: str, host: str = None, port: int = None, timeout: int = 3
     if not is_read_only(sql):
         return None, "Only SELECT queries allowed"
 
-    host = host or os.environ.get("TRINO_HOST", "trino.nndss-agent.svc.cluster.local")
+    host = host or os.environ.get("TRINO_HOST", "trino-coordinator.rl-sql.svc.cluster.local")
     port = port or int(os.environ.get("TRINO_PORT", "8080"))
 
     try:

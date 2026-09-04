@@ -29,15 +29,46 @@ NNDSS Trino pairs (~300)     ──┘         │              │             
 
 - RHOAI 3.5+ with Ray, KServe, and llm-d components enabled
 - H200 MIG slices (`nvidia.com/mig-3g.71gb` recommended for training and serving)
-- Trino lakehouse with NNDSS data (from [mcp-for-public-health](https://github.com/red-hat-data-services/mcp-for-public-health))
 - EvalHub for standardized benchmarking
+- `oc`, `helm`, `mc` (MinIO client) CLIs for Trino deployment
 
 ## Quick Start
 
-1. Clone this repo into an RHOAI workbench
-2. Run `scripts/download_bird_dbs.sh` to fetch BIRD SQLite databases
-3. Run `scripts/upload_to_pvc.sh` to stage data on the shared PVC
-4. Work through the notebooks in order
+### 1. Deploy Trino with NNDSS data
+
+The repo includes everything needed to stand up a Trino Iceberg lakehouse with Australian disease surveillance data (NNDSS). This provides the execution backend for RL reward validation during GRPO training.
+
+```bash
+./deploy/deploy-trino.sh
+```
+
+This deploys MinIO (S3 storage), Trino (Iceberg catalog via Nessie), and loads three tables:
+
+| Table | Rows | Description |
+|-------|------|-------------|
+| `lakehouse.nndss.notifications` | ~500 | Annual disease notifications (4 diseases, 2008-2025, by state) |
+| `lakehouse.nndss.population` | 144 | ABS estimated resident population (2008-2025, by state) |
+| `lakehouse.nndss.fortnightly_notifications` | ~5,000 | Fortnightly notifications (73 diseases, 2024-2026, by state) |
+
+Port-forward for notebook access:
+```bash
+oc port-forward svc/trino 8090:8080 -n rl-sql
+```
+
+### 2. Download BIRD SQLite databases
+
+```bash
+./scripts/download_bird_dbs.sh
+```
+
+### 3. Upload to PVC
+
+From an RHOAI workbench where the shared PVC is mounted:
+```bash
+./scripts/upload_to_pvc.sh /opt/app-root/src/shared
+```
+
+### 4. Run the notebooks in order
 
 ## Reward Function
 
@@ -51,6 +82,22 @@ The `reward/` module provides execution-based SQL grading adapted from [ReViSQL]
 ## Deployment
 
 The fine-tuned model is deployed via llm-d `LLMInferenceService` on a MIG 3g.71gb slice. See `manifests/` for the CR templates.
+
+## Repository Layout
+
+```
+rl-sql/
+  notebooks/                   # Jupyter notebooks (data prep → train → eval → deploy)
+  reward/                      # SQL execution reward module for GRPO training
+  manifests/                   # LLMInferenceService + MaaS deployment CRs
+  data/                        # BIRD-Platinum parquet, DDL schemas, generated NNDSS pairs
+  deploy/
+    deploy-trino.sh            # One-command Trino + NNDSS data setup
+    trino-chart/               # Trino Helm chart (Iceberg on MinIO/Nessie)
+    scripts/                   # Data loading scripts (notifications, population, fortnightly)
+    nndss-data/                # NNDSS source data (4 annual + 50 fortnightly Excel files)
+  scripts/                     # BIRD database download + PVC upload helpers
+```
 
 ## Data Sources
 
