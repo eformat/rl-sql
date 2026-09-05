@@ -5,7 +5,7 @@ metadata:
   name: rayjob-submitter
 rules:
   - apiGroups: ["ray.io"]
-    resources: ["rayjobs", "rayclusters"]
+    resources: ["rayjobs", "rayjobs/status", "rayclusters", "rayclusters/status"]
     verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
   - apiGroups: [""]
     resources: ["pods", "pods/log", "services", "events"]
