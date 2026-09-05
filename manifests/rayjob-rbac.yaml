@@ -1,0 +1,24 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rayjob-submitter
+rules:
+  - apiGroups: ["ray.io"]
+    resources: ["rayjobs", "rayclusters"]
+    verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rl-sql-rayjob-submitter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rayjob-submitter
+subjects:
+  - kind: ServiceAccount
+    name: rl-sql
