@@ -28,10 +28,8 @@ def execute_sqlite(sql: str, db_file: str, timeout: int = 30):
 
     Returns (rows: list[tuple] | None, error: str | None).
     """
-    conn = sqlite3.connect(db_file, timeout=5, uri=False)
+    conn = sqlite3.connect(f"file:{db_file}?mode=ro", timeout=5, uri=True)
     try:
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA synchronous=NORMAL;")
         conn.execute("PRAGMA query_only=ON;")
         start = time.monotonic()
 
